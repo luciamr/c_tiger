@@ -3,7 +3,7 @@ struct
 
 open tigerabs
 open tigersres
-open tigertrans
+(* open tigertrans *)
 
 type expty = {exp: exp, ty: Tipo}
 
@@ -66,18 +66,18 @@ fun tiposIguales (TRecord _) TNil = true
 fun transExp(venv, tenv) =
 	let fun error(s, p) = raise Fail ("Error -- línea "^Int.toString(p)^": "^s^"\n")
 		fun trexp(VarExp v) = trvar(v)
-		| trexp(UnitExp _) = {exp=SCAF, ty=TUnit}
-		| trexp(NilExp _)= {exp=SCAF, ty=TNil}
-		| trexp(IntExp(i, _)) = {exp=SCAF, ty=TInt}
-		| trexp(StringExp(s, _)) = {exp=SCAF, ty=TString}
+		| trexp(UnitExp _) = {exp=(), ty=TUnit}
+		| trexp(NilExp _)= {exp=(), ty=TNil}
+		| trexp(IntExp(i, _)) = {exp=(), ty=TInt}
+		| trexp(StringExp(s, _)) = {exp=(), ty=TString}
 		| trexp(CallExp({func, args}, nl)) =
-			{exp=SCAF, ty=TUnit} (*COMPLETAR*)
+			{exp=(), ty=TUnit} (*COMPLETAR*)
 		| trexp(OpExp({left, oper=EqOp, right}, nl)) =
 			let
 				val {exp=_, ty=tyl} = trexp left
 				val {exp=_, ty=tyr} = trexp right
 			in
-				if tiposIguales tyl tyr andalso not (tyl=TNil andalso tyr=TNil) andalso tyl<>TUnit then {exp=SCAF, ty=TInt}
+				if tiposIguales tyl tyr andalso not (tyl=TNil andalso tyr=TNil) andalso tyl<>TUnit then {exp=(), ty=TInt}
 					else error("Tipos no comparables", nl)
 			end
 		| trexp(OpExp({left, oper=NeqOp, right}, nl)) = 
@@ -85,7 +85,7 @@ fun transExp(venv, tenv) =
 				val {exp=_, ty=tyl} = trexp left
 				val {exp=_, ty=tyr} = trexp right
 			in
-				if tiposIguales tyl tyr andalso not (tyl=TNil andalso tyr=TNil) andalso tyl<>TUnit then {exp=SCAF, ty=TInt}
+				if tiposIguales tyl tyr andalso not (tyl=TNil andalso tyr=TNil) andalso tyl<>TUnit then {exp=(), ty=TInt}
 					else error("Tipos no comparables", nl)
 			end
 		| trexp(OpExp({left, oper, right}, nl)) = 
@@ -95,14 +95,14 @@ fun transExp(venv, tenv) =
 			in
 				if tiposIguales tyl tyr then
 					case oper of
-						PlusOp => if tipoReal tyl=TInt then {exp=SCAF,ty=TInt} else error("Error de tipos", nl)
-						| MinusOp => if tipoReal tyl=TInt then {exp=SCAF,ty=TInt} else error("Error de tipos", nl)
-						| TimesOp => if tipoReal tyl=TInt then {exp=SCAF,ty=TInt} else error("Error de tipos", nl)
-						| DivideOp => if tipoReal tyl=TInt then {exp=SCAF,ty=TInt} else error("Error de tipos", nl)
-						| LtOp => if tipoReal tyl=TInt orelse tipoReal tyl=TString then {exp=SCAF,ty=TInt} else error("Error de tipos", nl)
-						| LeOp => if tipoReal tyl=TInt orelse tipoReal tyl=TString then {exp=SCAF,ty=TInt} else error("Error de tipos", nl)
-						| GtOp => if tipoReal tyl=TInt orelse tipoReal tyl=TString then {exp=SCAF,ty=TInt} else error("Error de tipos", nl)
-						| GeOp => if tipoReal tyl=TInt orelse tipoReal tyl=TString then {exp=SCAF,ty=TInt} else error("Error de tipos", nl)
+						PlusOp => if tipoReal tyl=TInt then {exp=(),ty=TInt} else error("Error de tipos", nl)
+						| MinusOp => if tipoReal tyl=TInt then {exp=(),ty=TInt} else error("Error de tipos", nl)
+						| TimesOp => if tipoReal tyl=TInt then {exp=(),ty=TInt} else error("Error de tipos", nl)
+						| DivideOp => if tipoReal tyl=TInt then {exp=(),ty=TInt} else error("Error de tipos", nl)
+						| LtOp => if tipoReal tyl=TInt orelse tipoReal tyl=TString then {exp=(),ty=TInt} else error("Error de tipos", nl)
+						| LeOp => if tipoReal tyl=TInt orelse tipoReal tyl=TString then {exp=(),ty=TInt} else error("Error de tipos", nl)
+						| GtOp => if tipoReal tyl=TInt orelse tipoReal tyl=TString then {exp=(),ty=TInt} else error("Error de tipos", nl)
+						| GeOp => if tipoReal tyl=TInt orelse tipoReal tyl=TString then {exp=(),ty=TInt} else error("Error de tipos", nl)
 						| _ => raise Fail "No debería pasar! (3)"
 				else error("Error de tipos", nl)
 			end
@@ -128,30 +128,30 @@ fun transExp(venv, tenv) =
 							 else error("Error de tipo del campo "^s, nl)
 				val _ = verificar cs tfields
 			in
-				{exp=SCAF, ty=tyr}
+				{exp=(), ty=tyr}
 			end
 		| trexp(SeqExp(s, nl)) =
 			let	val lexti = map trexp s
 				val exprs = map (fn{exp, ty} => exp) lexti
 				val {exp, ty=tipo} = hd(rev lexti)
-			in	{ exp=SCAF, ty=tipo } end
+			in	{ exp=(), ty=tipo } end
 		| trexp(AssignExp({var=SimpleVar s, exp}, nl)) =
-			{exp=SCAF, ty=TUnit} (*COMPLETAR*)
+			{exp=(), ty=TUnit} (*COMPLETAR*)
 		| trexp(AssignExp({var, exp}, nl)) =
-			{exp=SCAF, ty=TUnit} (*COMPLETAR*)
+			{exp=(), ty=TUnit} (*COMPLETAR*)
 		| trexp(IfExp({test, then', else'=SOME else'}, nl)) =
 			let val {exp=testexp, ty=tytest} = trexp test
 			    val {exp=thenexp, ty=tythen} = trexp then'
 			    val {exp=elseexp, ty=tyelse} = trexp else'
 			in
-				if tipoReal tytest=TInt andalso tiposIguales tythen tyelse then {exp=SCAF, ty=tythen}
+				if tipoReal tytest=TInt andalso tiposIguales tythen tyelse then {exp=(), ty=tythen}
 				else error("Error de tipos en if" ,nl)
 			end
 		| trexp(IfExp({test, then', else'=NONE}, nl)) =
 			let val {exp=exptest,ty=tytest} = trexp test
 			    val {exp=expthen,ty=tythen} = trexp then'
 			in
-				if tipoReal tytest=TInt andalso tythen=TUnit then {exp=SCAF, ty=TUnit}
+				if tipoReal tytest=TInt andalso tythen=TUnit then {exp=(), ty=TUnit}
 				else error("Error de tipos en if", nl)
 			end
 		| trexp(WhileExp({test, body}, nl)) =
@@ -159,29 +159,29 @@ fun transExp(venv, tenv) =
 				val ttest = trexp test
 				val tbody = trexp body
 			in
-				if tipoReal (#ty ttest) = TInt andalso #ty tbody = TUnit then {exp=SCAF, ty=TUnit}
+				if tipoReal (#ty ttest) = TInt andalso #ty tbody = TUnit then {exp=(), ty=TUnit}
 				else if tipoReal (#ty ttest) <> TInt then error("Error de tipo en la condición", nl)
 				else error("El cuerpo de un while no puede devolver un valor", nl)
 			end
 		| trexp(ForExp({var, escape, lo, hi, body}, nl)) =
-			{exp=SCAF, ty=TUnit} (*COMPLETAR*)
+			{exp=(), ty=TUnit} (*COMPLETAR*)
 		| trexp(LetExp({decs, body}, _)) =
 			let
 				val (venv', tenv', _) = List.foldl (fn (d, (v, t, _)) => trdec(v, t) d) (venv, tenv, []) decs
 				val {exp=expbody,ty=tybody}=transExp (venv', tenv') body
 			in 
-				{exp=SCAF, ty=tybody}
+				{exp=(), ty=tybody}
 			end
 		| trexp(BreakExp nl) =
-			{exp=SCAF, ty=TUnit} (*COMPLETAR*)
+			{exp=(), ty=TUnit} (*COMPLETAR*)
 		| trexp(ArrayExp({typ, size, init}, nl)) =
-			{exp=SCAF, ty=TUnit} (*COMPLETAR*)
+			{exp=(), ty=TUnit} (*COMPLETAR*)
 		and trvar(SimpleVar s, nl) =
-			{exp=SCAF, ty=TUnit} (*COMPLETAR*)
+			{exp=(), ty=TUnit} (*COMPLETAR*)
 		| trvar(FieldVar(v, s), nl) =
-			{exp=SCAF, ty=TUnit} (*COMPLETAR*)
+			{exp=(), ty=TUnit} (*COMPLETAR*)
 		| trvar(SubscriptVar(v, e), nl) =
-			{exp=SCAF, ty=TUnit} (*COMPLETAR*)
+			{exp=(), ty=TUnit} (*COMPLETAR*)
 		and trdec (venv, tenv) (VarDec ({name,escape,typ=NONE,init},pos)) = 
 			(venv, tenv, []) (*COMPLETAR*)
 		| trdec (venv,tenv) (VarDec ({name,escape,typ=SOME s,init},pos)) =

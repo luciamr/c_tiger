@@ -1,15 +1,16 @@
 # Unix makefile for tigermain example
 
-HOME=~
-MOSMLHOME=${HOME}/mosml
-MOSMLTOOLS=camlrunm $(MOSMLHOME)/tools
+HOME=/usr
+MOSMLBIN=${HOME}/bin
+MOSMLSHARE=${HOME}/share
+MOSMLTOOLS=camlrunm ${MOSMLSHARE}/mosml/tools
 MOSMLLEX=mosmllex
 MOSMLYACC=mosmlyac -v
 
 GCC=gcc
 CFLAGS= -g
-MOSMLC=${MOSMLHOME}/bin/mosmlc -c -liberal
-MOSMLL=${MOSMLHOME}/bin/mosmlc
+MOSMLC=${MOSMLBIN}/mosmlc -c -liberal
+MOSMLL=${MOSMLBIN}/mosmlc
 
 # Unix
 REMOVE=rm -f
@@ -25,7 +26,8 @@ EXEFILE=
 .SUFFIXES : .sig .sml .ui .uo
 
 GRALOBJS= tigerabs.uo tigergrm.uo tigerlex.uo tigermain.uo \
-	tigernlin.uo tigerpp.uo tigerescap.uo tigertab.uo tigerseman.uo tigertemp.uo topsort.uo tigertrans.uo
+	tigernlin.uo tigerpp.uo tigerescap.uo tigertab.uo tigerseman.uo tigertemp.uo topsort.uo 
+#tigertrans.uo
 
 all: tiger
 

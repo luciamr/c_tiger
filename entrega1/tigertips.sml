@@ -7,7 +7,8 @@ datatype Tipo = TUnit
 	| TInt
 	| TString
 	| TArray of Tipo ref  * unique
-	| TRecord of (string * Tipo ref * int) list * unique
-	| TTipo of string 
+	| TRecord of (string * Tipo * int) list * unique
+	| TTipo of string * Tipo option ref
 
 end
+
