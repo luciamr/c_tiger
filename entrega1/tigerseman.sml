@@ -61,6 +61,7 @@ fun tiposIguales (TRecord _) TNil = true
 		in
 			tiposIguales a b
 		end
+  (* para mantener la igualdad a pedar de los distintos modos *)
   | tiposIguales (TInt _) (TInt _) = true
   | tiposIguales a b = (a=b)
 
@@ -271,10 +272,30 @@ fun transExp(venv, tenv) =
                 (* TODO chequear que sea positivo *)
                 else error("El índice tiene que ser entero", nl)
             end
-		and trdec (venv, tenv) (VarDec ({name,escape,typ=NONE,init},pos)) = 
-			(venv, tenv, []) (*COMPLETAR*)
+		and trdec (venv, tenv) (VarDec ({name,escape,typ=NONE,init},pos)) =
+                let
+                    val {exp=expe, ty=tye} = transExp (venv, tenv) init
+                    val venv' = tabRInserta (name, Var {ty=tye}, venv)
+                in
+                    if tye <> TNil then (venv', tenv, [])
+                    else error("Sólo los records pueden inicializarse en null, no indicó el tipo de la variable", pos)
+                end        
 		| trdec (venv,tenv) (VarDec ({name,escape,typ=SOME s,init},pos)) =
-			(venv, tenv, []) (*COMPLETAR*)
+                let
+                    val {exp=expe, ty=tye} = transExp (venv, tenv) init
+                    (* chequea que el tipo exista *)
+                    val s' = case tabBusca(s, tenv) of
+                                SOME t => t
+                                | NONE => error("El tipo "^s^" no existe", pos)
+                    val venv' = tabRInserta (name, Var {ty=tye}, venv)
+                in
+                    if tye <> TNil andalso tiposIguales s' tye then (venv', tenv, [])
+                    (* permite que los records se inicializen en null *)
+                    else if tye = TNil then case s' of
+                                                (TRecord _) => (venv', tenv, [])
+                                                | _ => error("Sólo los records pueden inicializarse en null, debe inicializar la variable", pos)
+                    else error("No coinciden los tipos", pos)
+                end        
 		| trdec (venv,tenv) (FunctionDec fs) =
 			(venv, tenv, []) (*COMPLETAR*)
 		| trdec (venv,tenv) (TypeDec ts) =
