@@ -61,14 +61,23 @@ fun tiposIguales (TRecord _) TNil = true
 		in
 			tiposIguales a b
 		end
-  (* para mantener la igualdad a pedar de los distintos modos *)
+  (* para mantener la igualdad a pedar de los desTIntos modos *)
   | tiposIguales (TInt _) (TInt _) = true
   | tiposIguales a b = (a=b)
 
+fun esTInt ty = let val tr = tipoReal ty in tr = TInt RO orelse tr = TInt RW end
+
+fun esta a [] = false
+    | esta a (x::xs) = if a = x then true
+                       else esta a xs
+
+fun elementosRepetidos [] = false
+    | elementosRepetidos (x::xs) = if esta x xs then true
+                                    else elementosRepetidos xs		
+
 fun transExp(venv, tenv) =
 	let fun error(s, p) = raise Fail ("Error -- línea "^Int.toString(p)^": "^s^"\n")
-        fun isTInt ty = let val tr = tipoReal ty in tr = TInt RO orelse tr = TInt RW end
-		fun trexp(VarExp v) = trvar(v)
+        fun trexp(VarExp v) = trvar(v)
 		| trexp(UnitExp _) = {exp=(), ty=TUnit}
 		| trexp(NilExp _)= {exp=(), ty=TNil}
 		| trexp(IntExp(i, _)) = {exp=(), ty=TInt RO}
@@ -112,14 +121,14 @@ fun transExp(venv, tenv) =
 			in
 				if tiposIguales tyl tyr then
 					case oper of
-						PlusOp => if isTInt tyl then {exp=(),ty=TInt RO} else error("Error de tipos", nl)
-						| MinusOp => if isTInt tyl then {exp=(),ty=TInt RO} else error("Error de tipos", nl)
-						| TimesOp => if isTInt tyl then {exp=(),ty=TInt RO} else error("Error de tipos", nl)
-						| DivideOp => if isTInt tyl then {exp=(),ty=TInt RO} else error("Error de tipos", nl)
-						| LtOp => if isTInt tyl orelse tipoReal tyl=TString then {exp=(),ty=TInt RW} else error("Error de tipos", nl)
-						| LeOp => if isTInt tyl orelse tipoReal tyl=TString then {exp=(),ty=TInt RW} else error("Error de tipos", nl)
-						| GtOp => if isTInt tyl orelse tipoReal tyl=TString then {exp=(),ty=TInt RW} else error("Error de tipos", nl)
-						| GeOp => if isTInt tyl orelse tipoReal tyl=TString then {exp=(),ty=TInt RW} else error("Error de tipos", nl)
+						PlusOp => if esTInt tyl then {exp=(),ty=TInt RO} else error("Error de tipos", nl)
+						| MinusOp => if esTInt tyl then {exp=(),ty=TInt RO} else error("Error de tipos", nl)
+						| TimesOp => if esTInt tyl then {exp=(),ty=TInt RO} else error("Error de tipos", nl)
+						| DivideOp => if esTInt tyl then {exp=(),ty=TInt RO} else error("Error de tipos", nl)
+						| LtOp => if esTInt tyl orelse tipoReal tyl=TString then {exp=(),ty=TInt RW} else error("Error de tipos", nl)
+						| LeOp => if esTInt tyl orelse tipoReal tyl=TString then {exp=(),ty=TInt RW} else error("Error de tipos", nl)
+						| GtOp => if esTInt tyl orelse tipoReal tyl=TString then {exp=(),ty=TInt RW} else error("Error de tipos", nl)
+						| GeOp => if esTInt tyl orelse tipoReal tyl=TString then {exp=(),ty=TInt RW} else error("Error de tipos", nl)
 						| _ => raise Fail "No debería pasar! (3)"
 				else error("Error de tipos", nl)
 			end
@@ -177,14 +186,14 @@ fun transExp(venv, tenv) =
 			    val {exp=thenexp, ty=tythen} = trexp then'
 			    val {exp=elseexp, ty=tyelse} = trexp else'
 			in
-				if isTInt tytest andalso tiposIguales tythen tyelse then {exp=(), ty=tythen}
+				if esTInt tytest andalso tiposIguales tythen tyelse then {exp=(), ty=tythen}
 				else error("Error de tipos en if" ,nl)
 			end
 		| trexp(IfExp({test, then', else'=NONE}, nl)) =
 			let val {exp=exptest,ty=tytest} = trexp test
 			    val {exp=expthen,ty=tythen} = trexp then'
 			in
-				if isTInt tytest andalso tythen=TUnit then {exp=(), ty=TUnit}
+				if esTInt tytest andalso tythen=TUnit then {exp=(), ty=TUnit}
 				else error("Error de tipos en if", nl)
 			end
 		| trexp(WhileExp({test, body}, nl)) =
@@ -192,8 +201,8 @@ fun transExp(venv, tenv) =
 				val ttest = trexp test
 				val tbody = trexp body
 			in
-				if isTInt (#ty ttest) andalso #ty tbody = TUnit then {exp=(), ty=TUnit}
-				else if not (isTInt (#ty ttest)) then error("Error de tipo en la condición", nl)
+				if esTInt (#ty ttest) andalso #ty tbody = TUnit then {exp=(), ty=TUnit}
+				else if not (esTInt (#ty ttest)) then error("Error de tipo en la condición", nl)
 				else error("El cuerpo de un while no puede devolver un valor", nl)
 			end
 		| trexp(ForExp({var, escape, lo, hi, body}, nl)) =
@@ -203,9 +212,9 @@ fun transExp(venv, tenv) =
                 val venv' = tabRInserta (var, Var {ty=TInt RO}, venv)
                 val {exp=_, ty=tybody} = transExp (venv', tenv) body
             in
-                 if (isTInt tylo) andalso (isTInt tyhi) andalso tipoReal tybody = TUnit then {exp=(), ty=TUnit}
-                 else if not (isTInt tylo) then error("Error de tipo en la cota inferior", nl)
-                 else if not (isTInt tyhi) then error("Error de tipo en la cota superior", nl)
+                 if (esTInt tylo) andalso (esTInt tyhi) andalso tipoReal tybody = TUnit then {exp=(), ty=TUnit}
+                 else if not (esTInt tylo) then error("Error de tipo en la cota inferior", nl)
+                 else if not (esTInt tyhi) then error("Error de tipo en la cota superior", nl)
                  else error("Error de tipo en el cuerpo del for", nl)
             end
 		| trexp(LetExp({decs, body}, _)) =
@@ -230,9 +239,9 @@ fun transExp(venv, tenv) =
                 val {exp=_, ty=tys} = trexp size
                 val {exp=_, ty=tyi} = trexp init
             in
-                if (isTInt tys) andalso (tiposIguales aty tyi) then {exp=(), ty=tr}
+                if (esTInt tys) andalso (tiposIguales aty tyi) then {exp=(), ty=tr}
                 (* TODO chequear que sea positivo *)
-                else if not (isTInt tys) then error("El tamaño del arreglo debe ser entero", nl)
+                else if not (esTInt tys) then error("El tamaño del arreglo debe ser entero", nl)
                 else error("No coinciden los tipos", nl)
             end
 		and trvar(SimpleVar s, nl) =
@@ -268,7 +277,7 @@ fun transExp(venv, tenv) =
                 (* obtiene el tipo de la expresión *)
                 val {exp=_, ty=tye} = trexp e
             in
-                if isTInt tye then {exp=(), ty=tr}
+                if esTInt tye then {exp=(), ty=tr}
                 (* TODO chequear que sea positivo *)
                 else error("El índice tiene que ser entero", nl)
             end
@@ -297,10 +306,88 @@ fun transExp(venv, tenv) =
                     else error("No coinciden los tipos", pos)
                 end        
 		| trdec (venv,tenv) (FunctionDec fs) =
-			(venv, tenv, []) (*COMPLETAR*)
+            let
+                (* chequea nombres repetidos *)
+                fun getFunName ({name, params, result, body}, nl) = name
+                val _ = if elementosRepetidos(List.map getFunName fs) then raise Fail "Nombres de funciones repetidos"
+                        else ()
+
+                (* chequea si existe el tipo del resultado y lo obtiene *)                
+                fun getResult ({name, params, result, body}, nl) = case result of
+                                                                        SOME t => (case tabBusca(t, tenv) of
+                                                                                    SOME t' => t'
+                                                                                    | NONE => error("Error de tipo en el retorno de la función", nl))
+                                                                        | NONE => TUnit
+                (* val _ = List.map getResult fs -- no es necesario, salta en funcList *)
+
+                (* chequea si se repiten los nombres de los parametros *)
+                fun getParamName {name, ...} = name
+                fun checkParamNames ({name, params, result, body}, nl) = if elementosRepetidos(List.map getParamName params) then error("Nombres de parametros repetidos en la funcion "^name, nl)
+                                                                            else ()
+                val _ = List.map checkParamNames fs
+                (* chequea si existen los tipos de los parametros y los obtiene *)
+                fun checkParamType ({name, escape, typ=(NameTy t)}, nl) = case tabBusca(t, tenv) of 
+                                                                            SOME t' => t'
+                                                                            | NONE => error("Tipo inexsitente", nl)
+                    (* | checkParamType (p, nl) = error("Error en la llamada a checkParamType", nl) *)
+                fun checkParamTypes ({name, params, result, body}, nl) = List.map (fn p => checkParamType(p, nl)) params
+                (* val _ = List.map checkParamTypes fs -- no es necesario, salta en funcList *)
+
+                val funcList = List.map (fn f => (getFunName f, Func {level=(), label=(getFunName f), formals=(checkParamTypes f), result=(getResult f), extern=false})) fs
+                val venv' = tabInserList (venv, funcList)
+
+                fun procBody venv ({name, params, result, body}, nl) =
+                    let
+                        val venv' = tabInserList(venv, List.map (fn p => (getParamName p, Var {ty=checkParamType(p, nl)})) params)
+                        val {ty=typBody, ...} = transExp(venv', tenv) body
+                        val typDec = getResult({name=name, params=params, result=result, body=body}, nl)
+					in
+						if name = "_tigermain" andalso (tiposIguales typDec TUnit) then ()
+                        else if tiposIguales typBody typDec then ()
+						else error ("Error en la declaracion de "^name^": no coincide el tipo declarado con el tipo del resultado", nl)
+					end
+
+                val _ = List.map (procBody venv') fs
+			in 
+				(venv', tenv, [])
+			end 
+
 		| trdec (venv,tenv) (TypeDec ts) =
-			(venv, tenv, []) (*COMPLETAR*)
+			let 
+				(* obtiene todos los simbolos *)
+				val simbolos = List.map (fn ({name, ty}, nl) => name) ts
+			
+				(* chequea si hay simbolos repetidos *)
+				val _ = if elementosRepetidos simbolos then raise Fail "Error en la declaracion de tipos, hay nombres repetidos"
+                        else ()
+				(* COMPLETAR *)			
+			in 
+				(venv, tenv, [])
+            end
+
+        and transTy (NameTy s, nl) = (case tabBusca(s, tenv) of
+                                        SOME t => t
+                                        | NONE => error("Error, no existe el tipo "^s, nl))
+        
+        | transTy (ArrayTy s, nl) =
+            let
+                val t = case tabBusca(s, tenv) of
+                        SOME t' => t'
+                        | NONE => error("Error, no existe el tipo "^s, nl)
+            in
+                TArray(t, ref())     
+            end       
+    
+        | transTy (RecordTy fs, nl) =
+            let
+                val _ = if elementosRepetidos(List.map (fn {name, escape, typ} => name) fs) then error("Hay campos repetidos es un record", nl)
+                        else ()
+            in
+                TRecord (List.map (fn {name, escape, typ} => (name, transTy (typ, nl), 0)) fs, ref())
+            end 
+
 	in trexp end
+
 fun transProg ex =
 	 let	val main =
 				LetExp({decs=[FunctionDec[({name="_tigermain", params=[],
