@@ -26,7 +26,7 @@ EXEFILE=
 .SUFFIXES : .sig .sml .ui .uo
 
 GRALOBJS= tigerabs.uo tigergrm.uo tigerlex.uo tigermain.uo \
-	tigernlin.uo tigerpp.uo tigerescap.uo tigertab.uo tigerseman.uo tigertemp.uo topsort.uo 
+	tigernlin.uo tigerpp.uo tigerescap.uo tigertab.uo topsort.uo tigerseman.uo tigertemp.uo 
 #tigertrans.uo
 
 all: tiger

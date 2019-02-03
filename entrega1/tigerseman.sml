@@ -3,6 +3,7 @@ struct
 
 open tigerabs
 open tigersres
+open topsort
 (* open tigertrans *)
 
 type expty = {exp: exp, ty: Tipo}
@@ -360,16 +361,44 @@ fun transExp(venv, tenv) =
 				(* chequea si hay simbolos repetidos *)
 				val _ = if elementosRepetidos simbolos then raise Fail "Error en la declaracion de tipos, hay nombres repetidos"
                         else ()
-				(* COMPLETAR *)			
+                
+				(* genera grafo de dependencias entre los tipos *)
+				fun arista ({name, ty=(NameTy s)}, _) = (name, s)
+					| arista ({name, ty=(ArrayTy s)}, _) = (name, s)
+					| arista _ = raise Fail ("Error en la llamada a arista") 
+				fun hayDepend ({name, ty=(NameTy s)}, _) = true
+					| hayDepend ({name, ty=(ArrayTy s)}, _) = true
+					| hayDepend _ = false
+				fun generaGrafo ts = List.map arista (List.filter hayDepend ts)
+				
+				(* ordena segun dependencias y detecta ciclos *)
+				val _ = topsort (generaGrafo ts) 
+                        handle _ => raise Fail "Error en la declaracion de tipos, hay un ciclo"
+				
+				(* inserta los tipos sin referencias *) 
+				fun formatoTTipo({name, ty}, _) = (name, TTipo(name, ref NONE))
+				val tenv' = tabInserList(tenv, (List.map formatoTTipo ts))
+				
+				(* procesa tipos *)
+				fun procTy tab ({name, ty}, pos) =
+					let 
+						val t = transTy tab (ty, pos)
+					in
+					    (case tabBusca(name, tab) of
+						    SOME (TTipo (_, r)) => (r := SOME t)
+							| NONE => error("No existe el tipo "^name, pos)
+							| _ => error("Error en la llamada a procTy", pos))
+					end
+				val _ = List.map (procTy tenv') ts
 			in 
 				(venv, tenv, [])
             end
 
-        and transTy (NameTy s, nl) = (case tabBusca(s, tenv) of
-                                        SOME t => t
-                                        | NONE => error("Error, no existe el tipo "^s, nl))
+        and transTy tenv (NameTy s, nl) = (case tabBusca(s, tenv) of
+                                            SOME t => t
+                                            | NONE => error("Error, no existe el tipo "^s, nl))
         
-        | transTy (ArrayTy s, nl) =
+        | transTy tenv (ArrayTy s, nl) =
             let
                 val t = case tabBusca(s, tenv) of
                         SOME t' => t'
@@ -378,12 +407,12 @@ fun transExp(venv, tenv) =
                 TArray(t, ref())     
             end       
     
-        | transTy (RecordTy fs, nl) =
+        | transTy tenv (RecordTy fs, nl) =
             let
                 val _ = if elementosRepetidos(List.map (fn {name, escape, typ} => name) fs) then error("Hay campos repetidos es un record", nl)
                         else ()
             in
-                TRecord (List.map (fn {name, escape, typ} => (name, transTy (typ, nl), 0)) fs, ref())
+                TRecord (List.map (fn {name, escape, typ} => (name, transTy tenv (typ, nl), 0)) fs, ref())
             end 
 
 	in trexp end
