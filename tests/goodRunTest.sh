@@ -5,5 +5,6 @@ rm $results
 touch $results
 
 for filename in ~/Documentos/Compiladores/c_tiger/tests/good/*.tig; do
+    cat "$filename" >> "$results"
     ~/Documentos/Compiladores/c_tiger/entrega1/tiger -arbol "$filename" >> "$results"
 done
