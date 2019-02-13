@@ -103,7 +103,8 @@ fun transExp(venv, tenv) =
 			let
 				val {exp=_, ty=tyl} = trexp left
 				val {exp=_, ty=tyr} = trexp right
-			in
+                (* val _ = print("EqOp: "^printTipo(tyl)^" "^printTipo(tyr)) *) (* *)
+            in
 				if tiposIguales tyl tyr andalso not (tyl=TNil andalso tyr=TNil) andalso tyl<>TUnit then {exp=(), ty=TInt RW}
 					else error("Tipos no comparables", nl)
 			end
@@ -111,6 +112,7 @@ fun transExp(venv, tenv) =
 			let
 				val {exp=_, ty=tyl} = trexp left
 				val {exp=_, ty=tyr} = trexp right
+                (* val _ = print("NeqOp: "^printTipo(tyl)^" "^printTipo(tyr)) *) (* *)
 			in
 				if tiposIguales tyl tyr andalso not (tyl=TNil andalso tyr=TNil) andalso tyl<>TUnit then {exp=(), ty=TInt RW}
 					else error("Tipos no comparables", nl)
@@ -297,15 +299,18 @@ fun transExp(venv, tenv) =
                     val s' = case tabBusca(s, tenv) of
                                 SOME t => t
                                 | NONE => error("El tipo "^s^" no existe", pos)
-                    val venv' = tabRInserta (name, Var {ty=tye}, venv)
+                    val venv' = tabRInserta (name, Var {ty=s'}, venv)
+                    (* val _ = print("s': "^printTipo(s')^"\n") *) (* *)
+                    (* val _ = print("tye: "^printTipo(tye)^"\n") *) (* *)
                 in
                     if tye <> TNil andalso tiposIguales s' tye then (venv', tenv, [])
                     (* permite que los records se inicializen en null *)
-                    else if tye = TNil then case s' of
+                    else if tye = TNil then case (tipoReal s') of
                                                 (TRecord _) => (venv', tenv, [])
                                                 | _ => error("Sólo los records pueden inicializarse en null, debe inicializar la variable", pos)
                     else error("No coinciden los tipos", pos)
-                end        
+                end
+        
 		| trdec (venv,tenv) (FunctionDec fs) =
             let
                 (* chequea nombres repetidos *)
@@ -355,7 +360,7 @@ fun transExp(venv, tenv) =
 
 		| trdec (venv,tenv) (TypeDec ts) =
 			let 
-				(* obtiene todos los simbolos *)
+                (* obtiene todos los simbolos *)
 				val simbolos = List.map (fn ({name, ty}, nl) => name) ts
 			
 				(* chequea si hay simbolos repetidos *)
@@ -389,9 +394,10 @@ fun transExp(venv, tenv) =
 							| NONE => error("No existe el tipo "^name, pos)
 							| _ => error("Error en la llamada a procTy", pos))
 					end
+
 				val _ = List.map (procTy tenv') ts
 			in 
-				(venv, tenv, [])
+				(venv, tenv', [])
             end
 
         and transTy tenv (NameTy s, nl) = (case tabBusca(s, tenv) of

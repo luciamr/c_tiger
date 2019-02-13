@@ -14,5 +14,15 @@ datatype Tipo = TUnit
 	| TRecord of (string * Tipo * int) list * unique
 	| TTipo of string * Tipo option ref
 
-end
+fun printTipo TUnit = "TUnit"
+	| printTipo TNil = "TNil"	
+	| printTipo (TInt RO) = "TInt RO"
+	| printTipo (TInt RW) = "TInt RW"
+	| printTipo TString = "TString"
+	| printTipo (TArray (t, _)) = "TArray of ("^printTipo t^")"
+	| printTipo (TRecord (fs, _)) = "TRecord "^List.foldl (fn ((n, t, p),res) => "("^n^"::"^printTipo t^"); "^res) "" fs
+	| printTipo (TTipo (s, r)) = (case !r of
+				                    NONE => "ttipo "^s^" none"
+				                    | SOME t => "ttipo "^s^" ("^printTipo t^")")       
 
+end
